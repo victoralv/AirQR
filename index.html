@@ -17,6 +17,8 @@
         .stats { margin-top: 15px; font-weight: bold; color: #333; }
         #receiver-fps { color: #4CAF50; font-size: 1.2em; margin-top: 10px; }
         input[type="file"] { margin: 20px 0; }
+        .progress-container { width: 100%; max-width: 400px; height: 12px; background: #e0e0e0; border-radius: 6px; margin: 15px auto; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s linear; }
     </style>
 </head>
 <body>
@@ -40,12 +42,14 @@
     <video id="video" playsinline></video>
     <canvas id="scan-canvas" class="hidden"></canvas>
     <div class="stats" id="receiver-fps">FPS: 0</div>
+    <div class="progress-container">
+        <div class="progress-bar" id="receiver-progress"></div>
+    </div>
     <div class="stats" id="receiver-stats">Waiting for camera...</div>
     <button onclick="resetApp()">Back</button>
 </div>
 
 <script>
-    // --- FOUNTAIN ALGORITHM CORE ---
     class Lcgrng {
         constructor(seed) { this.state = BigInt(seed); }
         nextInt(max) {
@@ -120,7 +124,6 @@
         }
     }
 
-    // --- ENCODER ---
     class FountainEncoder {
         constructor(payload, blockLen, sessionId) {
             this.payload = payload;
@@ -157,7 +160,6 @@
         }
     }
 
-    // --- DECODER ---
     class FountainDecoder {
         constructor(sessionId, k, blockLen, totalLen, expectedFnv) {
             this.sessionId = sessionId;
@@ -294,7 +296,6 @@
         return isText ? { mime: "text/plain", ext: "txt" } : { mime: "application/octet-stream", ext: "bin" };
     }
 
-    // --- APPLICATION STATE ---
     let encoder = null;
     let encodeInterval = null;
     let encodeSeq = 0;
@@ -306,7 +307,6 @@
     let framesReceived = 0;
     let fpsInterval = null;
 
-    // --- SENDER LOGIC ---
     document.getElementById('file-input').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -317,7 +317,7 @@
             encoder = new FountainEncoder(payload, 512, sessionId);
             encodeSeq = 0;
             if (encodeInterval) clearInterval(encodeInterval);
-            encodeInterval = setInterval(renderFrame, 41); // ~24 FPS
+            encodeInterval = setInterval(renderFrame, 41);
         };
         reader.readAsArrayBuffer(file);
     });
@@ -336,7 +336,6 @@
         encodeSeq++;
     }
 
-    // --- RECEIVER LOGIC ---
     function startCamera() {
         const video = document.getElementById('video');
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
@@ -397,6 +396,7 @@
         }
 
         document.getElementById('receiver-stats').innerText = `Blocks: ${decoder.resolvedCount}/${decoder.k} | New: ${decoder.framesNew} | Dup: ${decoder.framesDup}`;
+        document.getElementById('receiver-progress').style.width = `${(decoder.resolvedCount / decoder.k) * 100}%`;
 
         if (decoder.isComplete) {
             const payload = decoder.assemble();
@@ -430,7 +430,6 @@
             </a>`;
     }
 
-    // --- NAVIGATION ---
     function showSender() {
         document.getElementById('menu-view').classList.add('hidden');
         document.getElementById('sender-view').classList.remove('hidden');
@@ -454,6 +453,7 @@
         decoder = null;
         document.getElementById('sender-stats').innerText = "Select a file to begin encoding.";
         document.getElementById('receiver-fps').innerText = "FPS: 0";
+        document.getElementById('receiver-progress').style.width = '0%';
         document.getElementById('receiver-stats').innerText = "Waiting for camera...";
         const canvas = document.getElementById('qr-canvas');
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
