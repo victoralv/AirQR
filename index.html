@@ -19,6 +19,9 @@
         input[type="file"] { margin: 20px 0; }
         .progress-container { width: 100%; max-width: 400px; height: 12px; background: #e0e0e0; border-radius: 6px; margin: 15px auto; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s linear; }
+        details { margin-top: 25px; text-align: left; background: #f9f9fb; padding: 15px; border-radius: 6px; border: 1px solid #ddd; }
+        summary { cursor: pointer; font-weight: bold; outline: none; }
+        details p { margin: 10px 0 0 0; font-size: 0.9em; color: #444; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -27,6 +30,10 @@
     <h2>AirQR Web Transfer</h2>
     <button onclick="showSender()">Send File</button>
     <button onclick="showReceiver()">Receive File</button>
+    <details>
+        <summary>How it works</summary>
+        <p>Files are encoded into a continuous stream of animated QR codes. The receiving device's camera captures these frames to mathematically reconstruct the file. The transfer is exclusively optical. <strong>Zero data is transmitted over the internet or stored on any server.</strong> The exchange is strictly direct, local, and device-to-device.</p>
+    </details>
 </div>
 
 <div class="container hidden" id="sender-view">
