@@ -424,9 +424,9 @@
         a.click();
         
         document.getElementById('receiver-stats').innerHTML = 
-            `Transfer Complete! Validated.<br>
-            <a href="${url}" download="${filename}">
-                <button style="margin-top:15px; background:#28a745;">Save File</button>
+            `Transfer Complete! File sent to your browser's default downloads folder.<br>
+            <a href="${url}" target="_blank">
+                <button style="margin-top:15px; background:#28a745;">Open File in Browser</button>
             </a>`;
     }
 
