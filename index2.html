@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1488,10 +1487,13 @@
                         slot.ready = Boolean(message.ok);
                         slot.failed = !message.ok;
                         slot.engine = message.engine || "unavailable";
+                        // Spread the worker payload first. Otherwise message.type
+                        // ("ready") overwrites our normalized event type and the
+                        // main-thread handler silently ignores the event.
                         this.onEvent({
+                            ...message,
                             type: "worker-ready",
-                            slot: index,
-                            ...message
+                            slot: index
                         });
                         return;
                     }
@@ -1499,10 +1501,12 @@
                     if (message.type === "result") {
                         slot.busy = false;
                         slot.engine = message.engine || slot.engine;
+                        // Keep the normalized event type last for the same reason:
+                        // message.type is "result" and must not overwrite it.
                         this.onEvent({
+                            ...message,
                             type: "decode-result",
-                            slot: index,
-                            ...message
+                            slot: index
                         });
                     }
                 };
