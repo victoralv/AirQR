@@ -11,21 +11,114 @@
         }
     </script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 20px; text-align: center; background: #f4f4f9; }
-        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center; 
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: pulseGradient 12s ease infinite;
+            min-height: 100vh;
+        }
+
+        @keyframes pulseGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container { 
+            max-width: 600px; 
+            margin: 40px auto; 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); 
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
         .hidden { display: none; }
-        button { padding: 10px 20px; margin: 10px; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 4px; font-size: 16px; }
-        button:hover { background: #0056b3; }
-        #qr-canvas { margin: 20px auto; display: block; }
-        #video { width: 100%; max-width: 400px; margin: 20px auto; display: block; border: 1px solid #ccc; }
-        .stats { margin-top: 15px; font-weight: bold; color: #333; }
-        #receiver-fps { color: #4CAF50; font-size: 1.2em; margin-top: 10px; }
-        input[type="file"] { margin: 20px 0; }
-        .progress-container { width: 100%; max-width: 400px; height: 12px; background: #e0e0e0; border-radius: 6px; margin: 15px auto; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s linear; }
-        details { margin-top: 25px; text-align: left; background: #f9f9fb; padding: 15px; border-radius: 6px; border: 1px solid #ddd; }
-        summary { cursor: pointer; font-weight: bold; outline: none; }
-        details p { margin: 10px 0 0 0; font-size: 0.9em; color: #444; line-height: 1.5; }
+        
+        h2 { color: #1a1a2e; margin-bottom: 20px; }
+
+        button { 
+            padding: 12px 24px; 
+            margin: 10px; 
+            cursor: pointer; 
+            border: none; 
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8b); 
+            color: white; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+            background: linear-gradient(45deg, #ff5252, #ff7b77);
+        }
+
+        #qr-canvas { margin: 20px auto; display: block; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        #video { width: 100%; max-width: 400px; margin: 20px auto; display: block; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .stats { margin-top: 15px; font-weight: 600; color: #2d3436; }
+        #receiver-fps { color: #00b894; font-size: 1.2em; margin-top: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        input[type="file"] { margin: 20px 0; font-family: 'Poppins', sans-serif; }
+        
+        .progress-container { width: 100%; max-width: 400px; height: 14px; background: rgba(0,0,0,0.05); border-radius: 10px; margin: 20px auto; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00c6ff, #0072ff); transition: width 0.3s ease; border-radius: 10px; }
+        
+        details { margin-top: 25px; text-align: left; background: rgba(255, 255, 255, 0.6); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.5); transition: all 0.3s ease; }
+        details[open] { background: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        summary { cursor: pointer; font-weight: 700; outline: none; color: #2d3436; }
+        details p { margin: 12px 0 0 0; font-size: 0.95em; color: #636e72; line-height: 1.6; }
+        /* Styling for the "Open File in Browser" success button */
+        button.success {
+            background: linear-gradient(45deg, #00b894, #55efc4);
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
+        }
+
+        button.success:hover {
+            background: linear-gradient(45deg, #00a884, #48d8b2);
+            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Styling for the hidden file input wrapper */
+        .file-upload-wrapper {
+            margin: 20px 0;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 12px 24px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            color: white;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+        }
+
+        .custom-file-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 114, 255, 0.6);
+        }
     </style>
         <script>
         /**
@@ -61,7 +154,12 @@
 
 <div class="container hidden" id="sender-view">
     <h2>Sender</h2>
+    <div class="file-upload-wrapper">
+    <label for="file-input" class="custom-file-upload">
+        Select a File
+    </label>
     <input type="file" id="file-input">
+</div>
     <canvas id="qr-canvas"></canvas>
     <div class="stats" id="sender-stats">Select a file to begin encoding.</div>
     <button onclick="resetApp()">Back</button>
@@ -456,7 +554,7 @@
         document.getElementById('receiver-stats').innerHTML = 
             `Transfer Complete! File sent to your browser's default downloads folder.<br>
             <a href="${url}" target="_blank">
-                <button style="margin-top:15px; background:#28a745;">Open File in Browser</button>
+                <button class="success" style="margin-top:15px;">Open File in Browser</button>
             </a>`;
     }
 
