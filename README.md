@@ -14,7 +14,7 @@ Based on [Decimen Optical Transfer](https://github.com/bashalarmistalt/decimen-o
 
 [Report an Issue](https://github.com/victoralv/airqr/issues)
 
-<img src="1785589251691.jpeg" alt="AirQR sender preview" width="250"/>
+[Test it live](https://victoralv.github.io/AirQR/) 
 
 </div>
 
