@@ -32,6 +32,7 @@
         }
 
         .container { 
+            width: 100%;
             max-width: 600px; 
             margin: 40px auto; 
             background: rgba(255, 255, 255, 0.85); 
@@ -41,6 +42,18 @@
             border-radius: 20px; 
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); 
             border: 1px solid rgba(255, 255, 255, 0.4);
+            box-sizing: border-box;
+        }
+
+        #qr-canvas { 
+            margin: 20px auto; 
+            display: block; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100% !important;
+            max-width: 400px !important;
+            height: auto !important;
+            aspect-ratio: 1 / 1;
         }
 
         .hidden { display: none; }
@@ -68,7 +81,6 @@
             background: linear-gradient(45deg, #ff5252, #ff7b77);
         }
 
-        #qr-canvas { margin: 20px auto; display: block; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%;  height: auto; aspect-ratio: 1 / 1;}
         #video { width: 100%; max-width: 400px; margin: 20px auto; display: block; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
         .stats { margin-top: 15px; font-weight: 600; color: #2d3436; }
