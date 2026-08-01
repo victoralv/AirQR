@@ -15,6 +15,7 @@
         #qr-canvas { margin: 20px auto; display: block; }
         #video { width: 100%; max-width: 400px; margin: 20px auto; display: block; border: 1px solid #ccc; }
         .stats { margin-top: 15px; font-weight: bold; color: #333; }
+        #receiver-fps { color: #4CAF50; font-size: 1.2em; margin-top: 10px; }
         input[type="file"] { margin: 20px 0; }
     </style>
 </head>
@@ -38,6 +39,7 @@
     <h2>Receiver</h2>
     <video id="video" playsinline></video>
     <canvas id="scan-canvas" class="hidden"></canvas>
+    <div class="stats" id="receiver-fps">FPS: 0</div>
     <div class="stats" id="receiver-stats">Waiting for camera...</div>
     <button onclick="resetApp()">Back</button>
 </div>
@@ -277,6 +279,21 @@
         };
     }
 
+    function getMimeTypeAndExt(data) {
+        if (data.length >= 4) {
+            if (data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4E && data[3] === 0x47) return { mime: "image/png", ext: "png" };
+            if (data[0] === 0xFF && data[1] === 0xD8) return { mime: "image/jpeg", ext: "jpg" };
+            if (data[0] === 0x25 && data[1] === 0x50 && data[2] === 0x44 && data[3] === 0x46) return { mime: "application/pdf", ext: "pdf" };
+            if (data[0] === 0x50 && data[1] === 0x4B && data[2] === 0x03 && data[3] === 0x04) return { mime: "application/zip", ext: "zip" };
+        }
+        
+        let isText = true;
+        for (let i = 0; i < Math.min(data.length, 100); i++) {
+            if (data[i] === 0) { isText = false; break; }
+        }
+        return isText ? { mime: "text/plain", ext: "txt" } : { mime: "application/octet-stream", ext: "bin" };
+    }
+
     // --- APPLICATION STATE ---
     let encoder = null;
     let encodeInterval = null;
@@ -286,6 +303,8 @@
     let stream = null;
     let scanning = false;
     let lastProcessedSeq = -1;
+    let framesReceived = 0;
+    let fpsInterval = null;
 
     // --- SENDER LOGIC ---
     document.getElementById('file-input').addEventListener('change', (e) => {
@@ -298,7 +317,7 @@
             encoder = new FountainEncoder(payload, 512, sessionId);
             encodeSeq = 0;
             if (encodeInterval) clearInterval(encodeInterval);
-            encodeInterval = setInterval(renderFrame, 150); // ~6.6 FPS
+            encodeInterval = setInterval(renderFrame, 41); // ~24 FPS
         };
         reader.readAsArrayBuffer(file);
     });
@@ -326,6 +345,17 @@
             video.setAttribute("playsinline", true);
             video.play();
             scanning = true;
+            
+            framesReceived = 0;
+            if (fpsInterval) clearInterval(fpsInterval);
+            fpsInterval = setInterval(() => {
+                const fpsColor = framesReceived >= 20 ? '#4CAF50' : (framesReceived >= 12 ? '#FF9800' : '#F44336');
+                const fpsEl = document.getElementById('receiver-fps');
+                fpsEl.innerText = `FPS: ${framesReceived}`;
+                fpsEl.style.color = fpsColor;
+                framesReceived = 0;
+            }, 1000);
+
             requestAnimationFrame(scanLoop);
         });
     }
@@ -344,6 +374,7 @@
             const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
             
             if (code && code.binaryData) {
+                framesReceived++;
                 processScannedData(new Uint8Array(code.binaryData));
             }
         }
@@ -370,25 +401,33 @@
         if (decoder.isComplete) {
             const payload = decoder.assemble();
             if (fnv1a(payload) === decoder.expectedFnv) {
-                document.getElementById('receiver-stats').innerText = "Transfer Complete! Validated.";
-                downloadFile(payload, "AirQR_Transfer.bin");
+                downloadFile(payload);
                 scanning = false;
+                if (fpsInterval) clearInterval(fpsInterval);
             } else {
                 document.getElementById('receiver-stats').innerText = "Transfer Complete, but checksum failed!";
             }
         }
     }
 
-    function downloadFile(data, filename) {
-        const blob = new Blob([data], { type: 'application/octet-stream' });
+    function downloadFile(data) {
+        const { mime, ext } = getMimeTypeAndExt(data);
+        const filename = `AirQR_${Date.now()}.${ext}`;
+        const blob = new Blob([data], { type: mime });
         const url = window.URL.createObjectURL(blob);
+        
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
+        
+        document.getElementById('receiver-stats').innerHTML = 
+            `Transfer Complete! Validated.<br>
+            <a href="${url}" download="${filename}">
+                <button style="margin-top:15px; background:#28a745;">Save File</button>
+            </a>`;
     }
 
     // --- NAVIGATION ---
@@ -405,6 +444,7 @@
 
     function resetApp() {
         if (encodeInterval) clearInterval(encodeInterval);
+        if (fpsInterval) clearInterval(fpsInterval);
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
@@ -413,6 +453,7 @@
         encoder = null;
         decoder = null;
         document.getElementById('sender-stats').innerText = "Select a file to begin encoding.";
+        document.getElementById('receiver-fps').innerText = "FPS: 0";
         document.getElementById('receiver-stats').innerText = "Waiting for camera...";
         const canvas = document.getElementById('qr-canvas');
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
@@ -422,7 +463,6 @@
         document.getElementById('receiver-view').classList.add('hidden');
         document.getElementById('menu-view').classList.remove('hidden');
     }
-    
 </script>
 </body>
 </html>
