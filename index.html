@@ -15,8 +15,13 @@
         .stats { margin-top: 15px; font-weight: bold; color: #333; }
         #receiver-fps { color: #4CAF50; font-size: 1.2em; margin-top: 10px; }
         input[type="file"] { margin: 20px 0; }
+        .progress-container { width: 100%; max-width: 400px; height: 12px; background: #e0e0e0; border-radius: 6px; margin: 15px auto; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s linear; }
+        details { margin-top: 25px; text-align: left; background: #f9f9fb; padding: 15px; border-radius: 6px; border: 1px solid #ddd; }
+        summary { cursor: pointer; font-weight: bold; outline: none; }
+        details p { margin: 10px 0 0 0; font-size: 0.9em; color: #444; line-height: 1.5; }
     </style>
-    <script>
+        <script>
         /**
          * Minified by jsDelivr using Terser v5.39.0.
          * Original file: /npm/jsqr@1.4.0/dist/jsQR.js
@@ -38,6 +43,10 @@
     <h2>AirQR Web Transfer</h2>
     <button onclick="showSender()">Send File</button>
     <button onclick="showReceiver()">Receive File</button>
+    <details>
+        <summary>How it works</summary>
+        <p>Files are encoded into a continuous stream of animated QR codes. The receiving device's camera captures these frames to mathematically reconstruct the file. The transfer is exclusively optical. <strong>Zero data is transmitted over the internet or stored on any server.</strong> The exchange is strictly direct, local, and device-to-device.</p>
+    </details>
 </div>
 
 <div class="container hidden" id="sender-view">
@@ -53,12 +62,14 @@
     <video id="video" playsinline></video>
     <canvas id="scan-canvas" class="hidden"></canvas>
     <div class="stats" id="receiver-fps">FPS: 0</div>
+    <div class="progress-container">
+        <div class="progress-bar" id="receiver-progress"></div>
+    </div>
     <div class="stats" id="receiver-stats">Waiting for camera...</div>
     <button onclick="resetApp()">Back</button>
 </div>
 
 <script>
-    // --- FOUNTAIN ALGORITHM CORE ---
     class Lcgrng {
         constructor(seed) { this.state = BigInt(seed); }
         nextInt(max) {
@@ -133,7 +144,6 @@
         }
     }
 
-    // --- ENCODER ---
     class FountainEncoder {
         constructor(payload, blockLen, sessionId) {
             this.payload = payload;
@@ -170,7 +180,6 @@
         }
     }
 
-    // --- DECODER ---
     class FountainDecoder {
         constructor(sessionId, k, blockLen, totalLen, expectedFnv) {
             this.sessionId = sessionId;
@@ -307,7 +316,6 @@
         return isText ? { mime: "text/plain", ext: "txt" } : { mime: "application/octet-stream", ext: "bin" };
     }
 
-    // --- APPLICATION STATE ---
     let encoder = null;
     let encodeInterval = null;
     let encodeSeq = 0;
@@ -319,7 +327,6 @@
     let framesReceived = 0;
     let fpsInterval = null;
 
-    // --- SENDER LOGIC ---
     document.getElementById('file-input').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -330,7 +337,7 @@
             encoder = new FountainEncoder(payload, 512, sessionId);
             encodeSeq = 0;
             if (encodeInterval) clearInterval(encodeInterval);
-            encodeInterval = setInterval(renderFrame, 41); // ~24 FPS
+            encodeInterval = setInterval(renderFrame, 41);
         };
         reader.readAsArrayBuffer(file);
     });
@@ -349,7 +356,6 @@
         encodeSeq++;
     }
 
-    // --- RECEIVER LOGIC ---
     function startCamera() {
         const video = document.getElementById('video');
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
@@ -410,6 +416,7 @@
         }
 
         document.getElementById('receiver-stats').innerText = `Blocks: ${decoder.resolvedCount}/${decoder.k} | New: ${decoder.framesNew} | Dup: ${decoder.framesDup}`;
+        document.getElementById('receiver-progress').style.width = `${(decoder.resolvedCount / decoder.k) * 100}%`;
 
         if (decoder.isComplete) {
             const payload = decoder.assemble();
@@ -437,13 +444,12 @@
         a.click();
         
         document.getElementById('receiver-stats').innerHTML = 
-            `Transfer Complete! Validated.<br>
-            <a href="${url}" download="${filename}">
-                <button style="margin-top:15px; background:#28a745;">Save File</button>
+            `Transfer Complete! File sent to your browser's default downloads folder.<br>
+            <a href="${url}" target="_blank">
+                <button style="margin-top:15px; background:#28a745;">Open File in Browser</button>
             </a>`;
     }
 
-    // --- NAVIGATION ---
     function showSender() {
         document.getElementById('menu-view').classList.add('hidden');
         document.getElementById('sender-view').classList.remove('hidden');
@@ -467,6 +473,7 @@
         decoder = null;
         document.getElementById('sender-stats').innerText = "Select a file to begin encoding.";
         document.getElementById('receiver-fps').innerText = "FPS: 0";
+        document.getElementById('receiver-progress').style.width = '0%';
         document.getElementById('receiver-stats').innerText = "Waiting for camera...";
         const canvas = document.getElementById('qr-canvas');
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
