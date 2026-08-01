@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirQR Web</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; text-align: center; background: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 4px; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #qr-canvas { margin: 20px auto; display: block; }
+        #video { width: 100%; max-width: 400px; margin: 20px auto; display: block; border: 1px solid #ccc; }
+        .stats { margin-top: 15px; font-weight: bold; color: #333; }
+        input[type="file"] { margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="menu-view">
+    <h2>AirQR Web Transfer</h2>
+    <button onclick="showSender()">Send File</button>
+    <button onclick="showReceiver()">Receive File</button>
+</div>
+
+<div class="container hidden" id="sender-view">
+    <h2>Sender</h2>
+    <input type="file" id="file-input">
+    <canvas id="qr-canvas"></canvas>
+    <div class="stats" id="sender-stats">Select a file to begin encoding.</div>
+    <button onclick="resetApp()">Back</button>
+</div>
+
+<div class="container hidden" id="receiver-view">
+    <h2>Receiver</h2>
+    <video id="video" playsinline></video>
+    <canvas id="scan-canvas" class="hidden"></canvas>
+    <div class="stats" id="receiver-stats">Waiting for camera...</div>
+    <button onclick="resetApp()">Back</button>
+</div>
+
+<script>
+    // --- FOUNTAIN ALGORITHM CORE ---
+    class Lcgrng {
+        constructor(seed) { this.state = BigInt(seed); }
+        nextInt(max) {
+            this.state = (this.state * 1103515245n + 12345n) & 0x7fffffffn;
+            return Number(this.state % BigInt(max));
+        }
+        nextDouble() {
+            this.state = (this.state * 1103515245n + 12345n) & 0x7fffffffn;
+            return Number(this.state) / 0x7fffffff;
+        }
+    }
+
+    const HEADER_LEN = 20;
+
+    function computeRSD(k) {
+        if (k <= 1) return [0.0, 1.0];
+        const c = 0.1, delta = 0.5;
+        const r = c * Math.log(k / delta) * Math.sqrt(k);
+        const tau = new Float64Array(k + 1);
+        const limit = Math.floor(k / r);
+        for (let d = 1; d <= limit; d++) tau[d] = r / (d * k);
+        if (limit + 1 <= k) tau[limit + 1] = r * Math.log(r / delta) / k;
+        
+        const rho = new Float64Array(k + 1);
+        rho[1] = 1.0 / k;
+        for (let d = 2; d <= k; d++) rho[d] = 1.0 / (d * (d - 1));
+        
+        const mu = new Float64Array(k + 1);
+        let sum = 0.0;
+        for (let d = 1; d <= k; d++) {
+            mu[d] = rho[d] + tau[d];
+            sum += mu[d];
+        }
+        for (let d = 1; d <= k; d++) mu[d] /= sum;
+        return mu;
+    }
+
+    function getDegree(prng, cdf) {
+        const p = prng.nextDouble();
+        let sum = 0.0;
+        for (let d = 1; d < cdf.length; d++) {
+            sum += cdf[d];
+            if (p <= sum) return d;
+        }
+        return cdf.length - 1;
+    }
+
+    function getIndices(prng, k, d) {
+        const indices = new Int32Array(k);
+        for (let i = 0; i < k; i++) indices[i] = i;
+        for (let i = 0; i < d; i++) {
+            const j = i + prng.nextInt(k - i);
+            const temp = indices[i];
+            indices[i] = indices[j];
+            indices[j] = temp;
+        }
+        return indices.slice(0, d);
+    }
+
+    function fnv1a(data) {
+        let hash = -2128831035; 
+        for (let i = 0; i < data.length; i++) {
+            hash ^= data[i];
+            hash = Math.imul(hash, 16777619);
+        }
+        return hash;
+    }
+
+    function fastXor(dst, dstOffset, src, srcOffset, len) {
+        for (let i = 0; i < len; i++) {
+            dst[dstOffset + i] ^= src[srcOffset + i];
+        }
+    }
+
+    // --- ENCODER ---
+    class FountainEncoder {
+        constructor(payload, blockLen, sessionId) {
+            this.payload = payload;
+            this.blockLen = blockLen;
+            this.sessionId = sessionId;
+            this.k = Math.ceil(payload.length / blockLen);
+            this.rsd = computeRSD(this.k);
+        }
+
+        encode(seq) {
+            const prng = new Lcgrng(seq);
+            const d = getDegree(prng, this.rsd);
+            const indices = getIndices(prng, this.k, d);
+            
+            const block = new Uint8Array(this.blockLen);
+            for (let idx of indices) {
+                const start = idx * this.blockLen;
+                const end = Math.min(start + this.blockLen, this.payload.length);
+                for (let i = 0; i < (end - start); i++) block[i] ^= this.payload[start + i];
+            }
+            
+            const buf = new ArrayBuffer(HEADER_LEN + this.blockLen);
+            const view = new DataView(buf);
+            const bytes = new Uint8Array(buf);
+            
+            view.setInt16(0, this.sessionId, true);
+            view.setInt32(2, seq, true);
+            view.setInt32(6, this.k, true);
+            view.setInt16(10, this.blockLen, true);
+            view.setInt32(12, this.payload.length, true);
+            view.setInt32(16, fnv1a(this.payload), true);
+            bytes.set(block, HEADER_LEN);
+            return bytes;
+        }
+    }
+
+    // --- DECODER ---
+    class FountainDecoder {
+        constructor(sessionId, k, blockLen, totalLen, expectedFnv) {
+            this.sessionId = sessionId;
+            this.k = k;
+            this.blockLen = blockLen;
+            this.totalLen = totalLen;
+            this.expectedFnv = expectedFnv;
+            this.rsd = computeRSD(k);
+            this.blocks = new Array(k).fill(null);
+            this.resolvedCount = 0;
+            this.blockToFrames = Array.from({length: k}, () => []);
+            this.framesNew = 0;
+            this.framesDup = 0;
+        }
+
+        addFrame(seq, data) {
+            const prng = new Lcgrng(seq);
+            const d = getDegree(prng, this.rsd);
+            const indicesArr = getIndices(prng, this.k, d);
+
+            const frameIndices = new Uint8Array(this.k);
+            let degree = 0;
+
+            for (let i = 0; i < indicesArr.length; i++) {
+                const idx = indicesArr[i];
+                if (this.blocks[idx] !== null) {
+                    fastXor(data, HEADER_LEN, this.blocks[idx], 0, this.blockLen);
+                } else {
+                    frameIndices[idx] = 1;
+                    degree++;
+                }
+            }
+
+            if (degree === 0) {
+                this.framesDup++;
+                return;
+            }
+
+            this.framesNew++;
+            const frame = { degree, indices: frameIndices, data: new Uint8Array(data) };
+            
+            if (degree === 1) this.resolveFrame(frame);
+            else {
+                for (let i = 0; i < indicesArr.length; i++) {
+                    const idx = indicesArr[i];
+                    if (frameIndices[idx] === 1) this.blockToFrames[idx].push(frame);
+                }
+            }
+        }
+
+        resolveFrame(frame) {
+            let initialIdx = -1;
+            for (let i = 0; i < this.k; i++) {
+                if (frame.indices[i] === 1) {
+                    initialIdx = i;
+                    break;
+                }
+            }
+            if (initialIdx === -1 || this.blocks[initialIdx] !== null) return;
+
+            this.blocks[initialIdx] = frame.data.slice(HEADER_LEN, HEADER_LEN + this.blockLen);
+            this.resolvedCount++;
+
+            const queue = [initialIdx];
+            while (queue.length > 0) {
+                const resolvedIdx = queue.shift();
+                const resolvedBlock = this.blocks[resolvedIdx];
+                const dependentFrames = this.blockToFrames[resolvedIdx];
+
+                for (let i = 0; i < dependentFrames.length; i++) {
+                    const depFrame = dependentFrames[i];
+                    if (depFrame.indices[resolvedIdx] === 1) {
+                        depFrame.indices[resolvedIdx] = 0;
+                        depFrame.degree--;
+                        fastXor(depFrame.data, HEADER_LEN, resolvedBlock, 0, this.blockLen);
+
+                        if (depFrame.degree === 1) {
+                            let lastIdx = -1;
+                            for (let j = 0; j < this.k; j++) {
+                                if (depFrame.indices[j] === 1) { lastIdx = j; break; }
+                            }
+                            if (lastIdx !== -1 && this.blocks[lastIdx] === null) {
+                                this.blocks[lastIdx] = depFrame.data.slice(HEADER_LEN, HEADER_LEN + this.blockLen);
+                                this.resolvedCount++;
+                                queue.push(lastIdx);
+                            }
+                        }
+                    }
+                }
+                this.blockToFrames[resolvedIdx] = [];
+            }
+        }
+
+        get isComplete() { return this.resolvedCount === this.k; }
+
+        assemble() {
+            if (!this.isComplete) return null;
+            const out = new Uint8Array(this.totalLen);
+            let offset = 0;
+            for (let i = 0; i < this.k; i++) {
+                const len = Math.min(this.blockLen, this.totalLen - offset);
+                out.set(this.blocks[i].subarray(0, len), offset);
+                offset += len;
+            }
+            return out;
+        }
+    }
+
+    function parseHeader(bytes) {
+        if (bytes.length < HEADER_LEN) return null;
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        return {
+            sessionId: view.getInt16(0, true),
+            seq: view.getInt32(2, true),
+            k: view.getInt32(6, true),
+            blockLen: view.getInt16(10, true),
+            totalLen: view.getInt32(12, true),
+            payloadFnv: view.getInt32(16, true)
+        };
+    }
+
+    // --- APPLICATION STATE ---
+    let encoder = null;
+    let encodeInterval = null;
+    let encodeSeq = 0;
+    
+    let decoder = null;
+    let stream = null;
+    let scanning = false;
+    let lastProcessedSeq = -1;
+
+    // --- SENDER LOGIC ---
+    document.getElementById('file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const payload = new Uint8Array(event.target.result);
+            const sessionId = Math.floor(Math.random() * 0xFFFF);
+            encoder = new FountainEncoder(payload, 512, sessionId);
+            encodeSeq = 0;
+            if (encodeInterval) clearInterval(encodeInterval);
+            encodeInterval = setInterval(renderFrame, 150); // ~6.6 FPS
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function renderFrame() {
+        if (!encoder) return;
+        const frameBytes = encoder.encode(encodeSeq);
+        const canvas = document.getElementById('qr-canvas');
+        QRCode.toCanvas(canvas, [{ data: frameBytes, mode: 'byte' }], {
+            width: 400,
+            errorCorrectionLevel: 'L',
+            margin: 2
+        }, (error) => { if (error) console.error(error); });
+        
+        document.getElementById('sender-stats').innerText = `K=${encoder.k}, Transmitting Frame: ${encodeSeq}`;
+        encodeSeq++;
+    }
+
+    // --- RECEIVER LOGIC ---
+    function startCamera() {
+        const video = document.getElementById('video');
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
+            stream = s;
+            video.srcObject = stream;
+            video.setAttribute("playsinline", true);
+            video.play();
+            scanning = true;
+            requestAnimationFrame(scanLoop);
+        });
+    }
+
+    function scanLoop() {
+        if (!scanning) return;
+        const video = document.getElementById('video');
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            const canvas = document.getElementById('scan-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            
+            if (code && code.binaryData) {
+                processScannedData(new Uint8Array(code.binaryData));
+            }
+        }
+        requestAnimationFrame(scanLoop);
+    }
+
+    function processScannedData(bytes) {
+        if (decoder && decoder.isComplete) return;
+        const header = parseHeader(bytes);
+        if (!header) return;
+
+        if (!decoder || decoder.sessionId !== header.sessionId) {
+            decoder = new FountainDecoder(header.sessionId, header.k, header.blockLen, header.totalLen, header.payloadFnv);
+            lastProcessedSeq = -1;
+        }
+
+        if (header.seq !== lastProcessedSeq) {
+            decoder.addFrame(header.seq, bytes);
+            lastProcessedSeq = header.seq;
+        }
+
+        document.getElementById('receiver-stats').innerText = `Blocks: ${decoder.resolvedCount}/${decoder.k} | New: ${decoder.framesNew} | Dup: ${decoder.framesDup}`;
+
+        if (decoder.isComplete) {
+            const payload = decoder.assemble();
+            if (fnv1a(payload) === decoder.expectedFnv) {
+                document.getElementById('receiver-stats').innerText = "Transfer Complete! Validated.";
+                downloadFile(payload, "AirQR_Transfer.bin");
+                scanning = false;
+            } else {
+                document.getElementById('receiver-stats').innerText = "Transfer Complete, but checksum failed!";
+            }
+        }
+    }
+
+    function downloadFile(data, filename) {
+        const blob = new Blob([data], { type: 'application/octet-stream' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    // --- NAVIGATION ---
+    function showSender() {
+        document.getElementById('menu-view').classList.add('hidden');
+        document.getElementById('sender-view').classList.remove('hidden');
+    }
+
+    function showReceiver() {
+        document.getElementById('menu-view').classList.add('hidden');
+        document.getElementById('receiver-view').classList.remove('hidden');
+        startCamera();
+    }
+
+    function resetApp() {
+        if (encodeInterval) clearInterval(encodeInterval);
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        scanning = false;
+        encoder = null;
+        decoder = null;
+        document.getElementById('sender-stats').innerText = "Select a file to begin encoding.";
+        document.getElementById('receiver-stats').innerText = "Waiting for camera...";
+        const canvas = document.getElementById('qr-canvas');
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('file-input').value = "";
+        
+        document.getElementById('sender-view').classList.add('hidden');
+        document.getElementById('receiver-view').classList.add('hidden');
+        document.getElementById('menu-view').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
