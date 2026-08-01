@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <title>AirQR Web</title>
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        :root {
+            color-scheme: light;
+            --bg-1: #0f172a;
+            --bg-2: #164e63;
+            --panel: #ffffff;
+            --text: #111827;
+            --muted: #64748b;
+            --border: #dbe4ee;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --shadow: 0 20px 55px rgba(15, 23, 42, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+            background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        }
+
+        button,
+        input,
+        select,
+        output {
+            font: inherit;
+        }
+
+        button,
+        .button-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 11px 20px;
+            border: 0;
+            border-radius: 999px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 750;
+            color: #ffffff;
+            background: var(--primary);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+            transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
+        }
+
+        button:hover,
+        .button-link:hover {
+            transform: translateY(-1px);
+            background: var(--primary-dark);
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.32);
+        }
+
+        button:active,
+        .button-link:active {
+            transform: translateY(0);
+        }
+
+        button.secondary,
+        .button-link.secondary {
+            color: #1e293b;
+            background: #e2e8f0;
+            box-shadow: none;
+        }
+
+        button.secondary:hover,
+        .button-link.secondary:hover {
+            background: #cbd5e1;
+        }
+
+        button.success,
+        .button-link.success {
+            background: var(--success);
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25);
+        }
+
+        button.success:hover,
+        .button-link.success:hover {
+            background: #047857;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .app-shell {
+            width: min(760px, 100%);
+            margin: 0 auto;
+        }
+
+        .panel {
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1,
+        h2,
+        p {
+            margin-top: 0;
+        }
+
+        h1,
+        h2 {
+            margin-bottom: 10px;
+            letter-spacing: -0.035em;
+        }
+
+        .subtitle {
+            margin: 0 auto 24px;
+            max-width: 620px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .menu-buttons button {
+            min-width: 170px;
+        }
+
+        details {
+            margin-top: 18px;
+            padding: 16px 18px;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            text-align: left;
+            background: #f8fafc;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        details p {
+            margin: 12px 0 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        .field {
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #334155;
+        }
+
+        select,
+        input[type="range"] {
+            width: 100%;
+        }
+
+        select {
+            min-height: 42px;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            color: var(--text);
+            background: #ffffff;
+        }
+
+        .range-value {
+            display: block;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .file-upload-wrapper {
+            margin: 20px 0;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            clip-path: inset(50%);
+        }
+
+        .file-upload-wrapper label {
+            display: inline-flex;
+            min-height: 48px;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 22px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 800;
+            color: #ffffff;
+            background: #0891b2;
+            box-shadow: 0 8px 20px rgba(8, 145, 178, 0.25);
+        }
+
+        .qr-stage {
+            display: inline-block;
+            max-width: 100%;
+            margin: 12px auto;
+            padding: 10px;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        #qr-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 0;
+            box-shadow: none;
+            image-rendering: pixelated;
+        }
+
+        .video-shell {
+            position: relative;
+            width: min(520px, 100%);
+            aspect-ratio: 1;
+            margin: 20px auto 14px;
+            overflow: hidden;
+            border-radius: 18px;
+            background: #000000;
+        }
+
+        #video {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000000;
+        }
+
+        .scan-guide {
+            position: absolute;
+            inset: 7%;
+            pointer-events: none;
+            border: 3px solid rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.18);
+        }
+
+        .scan-guide::before,
+        .scan-guide::after {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 9px;
+            border-radius: 999px;
+            color: #ffffff;
+            background: rgba(15, 23, 42, 0.78);
+            font-size: 0.78rem;
+            font-weight: 800;
+            white-space: nowrap;
+            content: "Fill this square with the QR";
+        }
+
+        .scan-guide::before {
+            top: 10px;
+        }
+
+        .scan-guide::after {
+            bottom: 10px;
+            content: "Keep both devices steady";
+        }
+
+        .stats-card {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #f8fafc;
+            text-align: left;
+        }
+
+        .stats-card strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stats-line {
+            color: #334155;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+        }
+
+        #receiver-fps.good {
+            color: var(--success);
+        }
+
+        #receiver-fps.medium {
+            color: var(--warning);
+        }
+
+        #receiver-fps.bad {
+            color: var(--danger);
+        }
+
+        .progress-container {
+            width: min(520px, 100%);
+            height: 14px;
+            margin: 16px auto 0;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #06b6d4, #2563eb);
+            transition: width 180ms linear;
+        }
+
+        .success-box {
+            margin-top: 18px;
+            padding: 16px;
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            background: #ecfdf5;
+        }
+
+        .small-note {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.86rem;
+            line-height: 1.5;
+        }
+
+        body.transfer-active {
+            min-height: 100dvh;
+            padding: 0;
+            background: #111827;
+        }
+
+        body.transfer-active .app-shell {
+            width: min(900px, 100%);
+        }
+
+        body.transfer-active .panel {
+            min-height: 100dvh;
+            padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+
+            .panel {
+                padding: 22px 16px;
+                border-radius: 18px;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-row > * {
+                flex: 1 1 145px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="app-shell">
+    <section class="panel" id="menu-view">
+        <h1>AirQR Web Transfer</h1>
+        <p class="subtitle">
+            Send files as a stream of animated QR symbols. The transfer remains optical and device-to-device.
+        </p>
+
+        <div class="button-row menu-buttons">
+            <button type="button" id="show-sender-button">Send File</button>
+            <button type="button" id="show-receiver-button">Receive File</button>
+        </div>
+
+        <details>
+            <summary>How it works</summary>
+            <p>
+                The sender divides the file into source blocks, transmits a systematic pass, and then emits fountain repair equations. The receiver can drop camera frames and still reconstruct the original file after collecting enough independent symbols.
+            </p>
+        </details>
+
+        <details>
+            <summary>Offline mode</summary>
+            <p>
+                Install the app as a PWA and cache the two QR libraries, this HTML file, the manifest, and the service worker. Camera access still requires HTTPS or localhost.
+            </p>
+        </details>
+    </section>
+
+    <section class="panel hidden" id="sender-view">
+        <h2>Sender</h2>
+        <p class="subtitle">
+            Keep this screen bright and steady. The balanced profile is the best starting point.
+        </p>
+
+        <div class="settings-grid">
+            <div class="field">
+                <label for="sender-profile">Optical profile</label>
+                <select id="sender-profile">
+                    <option value="compatibility">Compatibility — 320 B, QR v12</option>
+                    <option value="balanced" selected>Balanced — 512 B, QR v16</option>
+                    <option value="fast">High throughput — 700 B, QR v19</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="tx-fps">Target symbol rate</label>
+                <input id="tx-fps" type="range" min="8" max="30" step="1" value="20">
+                <output id="tx-fps-output" class="range-value">20 symbols/s</output>
+            </div>
+        </div>
+
+        <div class="file-upload-wrapper">
+            <label for="file-input">Select a File</label>
+            <input type="file" id="file-input">
+        </div>
+
+        <div class="qr-stage">
+            <canvas id="qr-canvas" width="1" height="1" aria-label="Animated QR transfer stream"></canvas>
+        </div>
+
+        <div class="stats-card">
+            <strong>Transmission</strong>
+            <div class="stats-line" id="sender-stats">Select a file to begin.</div>
+        </div>
+
+        <div class="button-row">
+            <button type="button" id="pause-sender-button" disabled>Pause</button>
+            <button type="button" class="secondary back-button">Back</button>
+        </div>
+    </section>
+
+    <section class="panel hidden" id="receiver-view">
+        <h2>Receiver</h2>
+        <p class="subtitle">
+            Place the complete QR inside the guide. The decoder automatically lowers its working resolution on slower devices.
+        </p>
+
+        <div class="video-shell">
+            <video id="video" playsinline muted></video>
+            <div class="scan-guide" aria-hidden="true"></div>
+        </div>
+
+        <canvas id="scan-canvas" class="hidden"></canvas>
+
+        <div class="stats-card">
+            <strong>Performance</strong>
+            <div class="stats-line bad" id="receiver-fps">Camera: 0 | Scan: 0 | QR: 0 | Useful: 0</div>
+        </div>
+
+        <div class="progress-container" aria-label="Transfer progress">
+            <div class="progress-bar" id="receiver-progress"></div>
+        </div>
+
+        <div class="stats-card">
+            <strong>Transfer</strong>
+            <div class="stats-line" id="receiver-stats">Waiting for camera...</div>
+        </div>
+
+        <div class="success-box hidden" id="receive-actions">
+            <strong id="received-file-name">Transfer complete</strong>
+            <div class="button-row">
+                <a class="button-link success" id="download-link" href="#" download>Save File</a>
+                <a class="button-link secondary" id="open-link" href="#" target="_blank" rel="noopener">Open File</a>
+            </div>
+        </div>
+
+        <div class="button-row">
+            <button type="button" class="secondary back-button">Back</button>
+        </div>
+    </section>
+</main>
+
+<!--
+For strict offline use, download these exact files into your project and replace
+these URLs with local paths such as ./vendor/jsQR.js and ./vendor/qrcode.min.js.
+-->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.2.2/build/qrcode.min.js"></script>
+
+<script>
+(() => {
+    "use strict";
+
+    const FRAME_MAGIC = 0x32525141; // "AQR2" when written little-endian.
+    const FILE_MAGIC = 0x32465141;  // "AQF2" when written little-endian.
+    const PROTOCOL_VERSION = 2;
+    const FRAME_HEADER_LEN = 32;
+    const FILE_HEADER_LEN = 16;
+    const FRAME_CRC_OFFSET = 28;
+    const MAX_TOTAL_LEN = 256 * 1024 * 1024;
+    const MAX_BLOCKS = 200_000;
+    const DENSE_SOLVER_LIMIT = 64;
+    const MAX_FOUNTAIN_DEGREE = 1024;
+    const SYSTEMATIC_REPEAT_EVERY = 10;
+    const SOURCE_CROP_FRACTION = 0.90;
+    const RECENT_SEQUENCE_LIMIT = 256;
+
+    const PROFILES = Object.freeze({
+        compatibility: Object.freeze({
+            blockLen: 320,
+            qrVersion: 12,
+            defaultFps: 15
+        }),
+        balanced: Object.freeze({
+            blockLen: 512,
+            qrVersion: 16,
+            defaultFps: 20
+        }),
+        fast: Object.freeze({
+            blockLen: 700,
+            qrVersion: 19,
+            defaultFps: 24
+        })
+    });
+
+    const menuView = document.getElementById("menu-view");
+    const senderView = document.getElementById("sender-view");
+    const receiverView = document.getElementById("receiver-view");
+    const fileInput = document.getElementById("file-input");
+    const senderProfile = document.getElementById("sender-profile");
+    const txFpsInput = document.getElementById("tx-fps");
+    const txFpsOutput = document.getElementById("tx-fps-output");
+    const senderStats = document.getElementById("sender-stats");
+    const pauseSenderButton = document.getElementById("pause-sender-button");
+    const qrCanvas = document.getElementById("qr-canvas");
+
+    const video = document.getElementById("video");
+    const scanCanvas = document.getElementById("scan-canvas");
+    const receiverFps = document.getElementById("receiver-fps");
+    const receiverStats = document.getElementById("receiver-stats");
+    const receiverProgress = document.getElementById("receiver-progress");
+    const receiveActions = document.getElementById("receive-actions");
+    const receivedFileName = document.getElementById("received-file-name");
+    const downloadLink = document.getElementById("download-link");
+    const openLink = document.getElementById("open-link");
+
+    let encoder = null;
+    let decoder = null;
+    let selectedFile = null;
+    let selectedPayload = null;
+    let encodeSequence = 0;
+    let senderAnimationId = null;
+    let senderNextFrameAt = 0;
+    let senderPaused = false;
+    let senderFramesRendered = 0;
+    let senderStartedAt = 0;
+    let senderQrScale = 4;
+
+    let stream = null;
+    let scanning = false;
+    let scanContext = null;
+    let scanSize = 480;
+    let scanRequestId = null;
+    let scanRequestKind = null;
+    let metricsIntervalId = null;
+    let lastVideoTime = -1;
+    let lastPresentedFrameCount = null;
+    let scanMetrics = createScanMetrics();
+    let lastResolvedForRate = 0;
+    let recentSequences = [];
+    let recentSequenceSet = new Set();
+    let transferFinalizing = false;
+
+    let wakeLock = null;
+    let downloadObjectUrl = null;
+
+    const crc32Table = buildCrc32Table();
+
+    class Lcgrng {
+        constructor(seed) {
+            this.state = seed & 0x7fffffff;
+        }
+
+        nextRaw() {
+            this.state = (
+                Math.imul(this.state, 1103515245) + 12345
+            ) & 0x7fffffff;
+            return this.state;
+        }
+
+        nextInt(max) {
+            if (!Number.isInteger(max) || max <= 0) {
+                throw new RangeError("PRNG max must be a positive integer.");
+            }
+            return this.nextRaw() % max;
+        }
+
+        nextDouble() {
+            return this.nextRaw() / 0x80000000;
+        }
+    }
+
+    function buildCrc32Table() {
+        const table = new Uint32Array(256);
+
+        for (let i = 0; i < 256; i++) {
+            let value = i;
+            for (let bit = 0; bit < 8; bit++) {
+                value = (value & 1)
+                    ? (0xedb88320 ^ (value >>> 1))
+                    : (value >>> 1);
+            }
+            table[i] = value >>> 0;
+        }
+
+        return table;
+    }
+
+    function crc32Update(crc, byte) {
+        return crc32Table[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+    }
+
+    function computeFrameCrc(bytes) {
+        let crc = 0xffffffff;
+
+        for (let i = 0; i < FRAME_CRC_OFFSET; i++) {
+            crc = crc32Update(crc, bytes[i]);
+        }
+
+        for (let i = FRAME_HEADER_LEN; i < bytes.length; i++) {
+            crc = crc32Update(crc, bytes[i]);
+        }
+
+        return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function fnv1a(data) {
+        let hash = 0x811c9dc5;
+
+        for (let i = 0; i < data.length; i++) {
+            hash ^= data[i];
+            hash = Math.imul(hash, 0x01000193);
+        }
+
+        return hash >>> 0;
+    }
+
+    function xorBytes(destination, source) {
+        const byteLength = Math.min(destination.length, source.length);
+        const aligned = (
+            (destination.byteOffset & 3) === 0 &&
+            (source.byteOffset & 3) === 0
+        );
+
+        if (aligned && byteLength >= 4) {
+            const wordLength = byteLength >>> 2;
+            const destination32 = new Uint32Array(
+                destination.buffer,
+                destination.byteOffset,
+                wordLength
+            );
+            const source32 = new Uint32Array(
+                source.buffer,
+                source.byteOffset,
+                wordLength
+            );
+
+            for (let i = 0; i < wordLength; i++) {
+                destination32[i] ^= source32[i];
+            }
+
+            for (let i = wordLength << 2; i < byteLength; i++) {
+                destination[i] ^= source[i];
+            }
+            return;
+        }
+
+        for (let i = 0; i < byteLength; i++) {
+            destination[i] ^= source[i];
+        }
+    }
+
+    function computeRobustSoliton(k) {
+        const probabilities = new Float64Array(k + 1);
+
+        if (k <= 1) {
+            probabilities[1] = 1;
+            return probabilities;
+        }
+
+        const c = 0.1;
+        const delta = 0.1;
+        const r = c * Math.log(k / delta) * Math.sqrt(k);
+        const spike = Math.max(1, Math.min(k, Math.floor(k / r)));
+        const tau = new Float64Array(k + 1);
+
+        for (let degree = 1; degree < spike; degree++) {
+            tau[degree] = r / (degree * k);
+        }
+
+        tau[spike] = r * Math.log(r / delta) / k;
+
+        probabilities[1] = 1 / k;
+        let total = probabilities[1] + tau[1];
+        probabilities[1] += tau[1];
+
+        for (let degree = 2; degree <= k; degree++) {
+            probabilities[degree] = (
+                1 / (degree * (degree - 1))
+            ) + tau[degree];
+            total += probabilities[degree];
+        }
+
+        for (let degree = 1; degree <= k; degree++) {
+            probabilities[degree] /= total;
+        }
+
+        return probabilities;
+    }
+
+    function makeDegreeCdf(k) {
+        const probabilities = computeRobustSoliton(k);
+        const cdf = new Float64Array(probabilities.length);
+        let cumulative = 0;
+
+        for (let degree = 1; degree < probabilities.length; degree++) {
+            cumulative += probabilities[degree];
+            cdf[degree] = cumulative;
+        }
+
+        cdf[cdf.length - 1] = 1;
+        return cdf;
+    }
+
+    function getDegree(prng, cdf) {
+        const probability = prng.nextDouble();
+        let low = 1;
+        let high = cdf.length - 1;
+
+        while (low < high) {
+            const middle = (low + high) >>> 1;
+            if (probability <= cdf[middle]) {
+                high = middle;
+            } else {
+                low = middle + 1;
+            }
+        }
+
+        return low;
+    }
+
+    function getIndices(prng, k, degree) {
+        if (degree >= k) {
+            const all = new Uint32Array(k);
+            for (let i = 0; i < k; i++) all[i] = i;
+            return all;
+        }
+
+        if (degree <= 64 && degree * 4 < k) {
+            const output = new Uint32Array(degree);
+
+            for (let i = 0; i < degree; i++) {
+                let candidate;
+                let unique;
+
+                do {
+                    candidate = prng.nextInt(k);
+                    unique = true;
+
+                    for (let j = 0; j < i; j++) {
+                        if (output[j] === candidate) {
+                            unique = false;
+                            break;
+                        }
+                    }
+                } while (!unique);
+
+                output[i] = candidate;
+            }
+
+            return output;
+        }
+
+        const selected = new Set();
+
+        for (let j = k - degree; j < k; j++) {
+            const candidate = prng.nextInt(j + 1);
+            selected.add(selected.has(candidate) ? j : candidate);
+        }
+
+        return Uint32Array.from(selected);
+    }
+
+    function getFramePlan(sequence, k, degreeCdf) {
+        if (sequence < k) {
+            return {
+                systematic: true,
+                indices: Uint32Array.of(sequence)
+            };
+        }
+
+        const repairOffset = sequence - k;
+
+        if (repairOffset % SYSTEMATIC_REPEAT_EVERY === 0) {
+            const sourceIndex = (
+                Math.floor(repairOffset / SYSTEMATIC_REPEAT_EVERY) % k
+            );
+
+            return {
+                systematic: true,
+                indices: Uint32Array.of(sourceIndex)
+            };
+        }
+
+        const seed = (sequence ^ 0x6d2b79f5) & 0x7fffffff;
+        const prng = new Lcgrng(seed);
+        const degree = Math.min(
+            k,
+            MAX_FOUNTAIN_DEGREE,
+            getDegree(prng, degreeCdf)
+        );
+
+        return {
+            systematic: false,
+            indices: getIndices(prng, k, degree)
+        };
+    }
+
+    function packFilePayload(file, fileBytes) {
+        const encoder = new TextEncoder();
+        const nameBytes = encoder.encode(file.name || "AirQR_file.bin");
+        const mimeBytes = encoder.encode(file.type || "application/octet-stream");
+
+        if (nameBytes.length > 0xffff || mimeBytes.length > 0xffff) {
+            throw new Error("The file name or MIME type is too long.");
+        }
+
+        const totalLength = (
+            FILE_HEADER_LEN +
+            nameBytes.length +
+            mimeBytes.length +
+            fileBytes.length
+        );
+
+        const output = new Uint8Array(totalLength);
+        const view = new DataView(output.buffer);
+
+        view.setUint32(0, FILE_MAGIC, true);
+        view.setUint16(4, nameBytes.length, true);
+        view.setUint16(6, mimeBytes.length, true);
+        view.setUint32(8, fileBytes.length, true);
+        view.setUint32(12, Math.floor((file.lastModified || Date.now()) / 1000), true);
+
+        let offset = FILE_HEADER_LEN;
+        output.set(nameBytes, offset);
+        offset += nameBytes.length;
+        output.set(mimeBytes, offset);
+        offset += mimeBytes.length;
+        output.set(fileBytes, offset);
+
+        return output;
+    }
+
+    function unpackFilePayload(payload) {
+        if (payload.length < FILE_HEADER_LEN) return null;
+
+        const view = new DataView(
+            payload.buffer,
+            payload.byteOffset,
+            payload.byteLength
+        );
+
+        if (view.getUint32(0, true) !== FILE_MAGIC) return null;
+
+        const nameLength = view.getUint16(4, true);
+        const mimeLength = view.getUint16(6, true);
+        const fileLength = view.getUint32(8, true);
+        const metadataLength = FILE_HEADER_LEN + nameLength + mimeLength;
+
+        if (metadataLength + fileLength !== payload.length) return null;
+
+        const decoder = new TextDecoder();
+        let offset = FILE_HEADER_LEN;
+
+        const name = decoder.decode(payload.subarray(offset, offset + nameLength));
+        offset += nameLength;
+
+        const mime = decoder.decode(payload.subarray(offset, offset + mimeLength));
+        offset += mimeLength;
+
+        return {
+            name: sanitizeFilename(name || "AirQR_file.bin"),
+            mime: mime || "application/octet-stream",
+            bytes: payload.slice(offset, offset + fileLength)
+        };
+    }
+
+    class FountainEncoder {
+        constructor(payload, blockLen, sessionId) {
+            this.payload = payload;
+            this.blockLen = blockLen;
+            this.sessionId = sessionId;
+            this.k = Math.ceil(payload.length / blockLen);
+            this.degreeCdf = makeDegreeCdf(this.k);
+            this.payloadFnv = fnv1a(payload);
+        }
+
+        encode(sequence) {
+            const plan = getFramePlan(sequence, this.k, this.degreeCdf);
+            const block = new Uint8Array(this.blockLen);
+
+            if (plan.systematic) {
+                const sourceIndex = plan.indices[0];
+                const sourceStart = sourceIndex * this.blockLen;
+                block.set(
+                    this.payload.subarray(
+                        sourceStart,
+                        Math.min(sourceStart + this.blockLen, this.payload.length)
+                    )
+                );
+            } else {
+                for (const sourceIndex of plan.indices) {
+                    const sourceStart = sourceIndex * this.blockLen;
+                    xorBytes(
+                        block,
+                        this.payload.subarray(
+                            sourceStart,
+                            Math.min(sourceStart + this.blockLen, this.payload.length)
+                        )
+                    );
+                }
+            }
+
+            const bytes = new Uint8Array(FRAME_HEADER_LEN + this.blockLen);
+            const view = new DataView(bytes.buffer);
+
+            view.setUint32(0, FRAME_MAGIC, true);
+            view.setUint8(4, PROTOCOL_VERSION);
+            view.setUint8(5, plan.systematic ? 1 : 0);
+            view.setUint16(6, this.sessionId, true);
+            view.setUint32(8, sequence >>> 0, true);
+            view.setUint32(12, this.k, true);
+            view.setUint16(16, this.blockLen, true);
+            view.setUint16(18, plan.indices.length, true);
+            view.setUint32(20, this.payload.length, true);
+            view.setUint32(24, this.payloadFnv, true);
+            view.setUint32(FRAME_CRC_OFFSET, 0, true);
+
+            bytes.set(block, FRAME_HEADER_LEN);
+            view.setUint32(FRAME_CRC_OFFSET, computeFrameCrc(bytes), true);
+
+            return {
+                bytes,
+                systematic: plan.systematic,
+                degree: plan.indices.length
+            };
+        }
+    }
+
+    class FountainDecoder {
+        constructor(sessionId, k, blockLen, totalLen, expectedFnv) {
+            this.sessionId = sessionId;
+            this.k = k;
+            this.blockLen = blockLen;
+            this.totalLen = totalLen;
+            this.expectedFnv = expectedFnv;
+            this.degreeCdf = makeDegreeCdf(k);
+            this.blocks = new Array(k).fill(null);
+            this.blockToFrames = new Array(k);
+            this.activeFrames = new Set();
+            this.resolvedCount = 0;
+            this.framesNew = 0;
+            this.framesDup = 0;
+            this.lastDenseAttemptFrame = 0;
+        }
+
+        addFrame(sequence, frameBytes) {
+            const beforeResolved = this.resolvedCount;
+            const plan = getFramePlan(sequence, this.k, this.degreeCdf);
+            const data = frameBytes.slice(
+                FRAME_HEADER_LEN,
+                FRAME_HEADER_LEN + this.blockLen
+            );
+            const unresolved = [];
+
+            for (const index of plan.indices) {
+                const block = this.blocks[index];
+                if (block !== null) {
+                    xorBytes(data, block);
+                } else {
+                    unresolved.push(index);
+                }
+            }
+
+            if (unresolved.length === 0) {
+                this.framesDup++;
+                return {
+                    innovative: false,
+                    resolvedDelta: 0,
+                    degree: plan.indices.length,
+                    systematic: plan.systematic
+                };
+            }
+
+            this.framesNew++;
+
+            if (unresolved.length === 1) {
+                this.resolveBlock(unresolved[0], data);
+            } else {
+                const frame = {
+                    indices: Uint32Array.from(unresolved),
+                    remaining: unresolved.length,
+                    data,
+                    done: false
+                };
+
+                this.activeFrames.add(frame);
+
+                for (const index of unresolved) {
+                    if (!this.blockToFrames[index]) {
+                        this.blockToFrames[index] = [];
+                    }
+                    this.blockToFrames[index].push(frame);
+                }
+            }
+
+            this.maybeDenseSolve();
+
+            return {
+                innovative: true,
+                resolvedDelta: this.resolvedCount - beforeResolved,
+                degree: plan.indices.length,
+                systematic: plan.systematic
+            };
+        }
+
+        resolveBlock(initialIndex, initialData) {
+            if (this.blocks[initialIndex] !== null) return;
+
+            this.blocks[initialIndex] = initialData;
+            this.resolvedCount++;
+
+            const queue = [initialIndex];
+
+            for (let head = 0; head < queue.length; head++) {
+                const resolvedIndex = queue[head];
+                const resolvedBlock = this.blocks[resolvedIndex];
+                const dependentFrames = this.blockToFrames[resolvedIndex] || [];
+                this.blockToFrames[resolvedIndex] = null;
+
+                for (const frame of dependentFrames) {
+                    if (frame.done || !frame.data) continue;
+
+                    xorBytes(frame.data, resolvedBlock);
+                    frame.remaining--;
+
+                    if (frame.remaining <= 0) {
+                        this.finishFrame(frame);
+                        continue;
+                    }
+
+                    if (frame.remaining === 1) {
+                        let finalIndex = -1;
+
+                        for (const candidate of frame.indices) {
+                            if (this.blocks[candidate] === null) {
+                                finalIndex = candidate;
+                                break;
+                            }
+                        }
+
+                        const recoveredData = frame.data;
+                        this.finishFrame(frame, false);
+
+                        if (
+                            finalIndex !== -1 &&
+                            this.blocks[finalIndex] === null
+                        ) {
+                            this.blocks[finalIndex] = recoveredData;
+                            this.resolvedCount++;
+                            queue.push(finalIndex);
+                        }
+                    }
+                }
+            }
+        }
+
+        finishFrame(frame, discardData = true) {
+            frame.done = true;
+            this.activeFrames.delete(frame);
+            frame.indices = null;
+            if (discardData) frame.data = null;
+        }
+
+        maybeDenseSolve() {
+            const remaining = this.k - this.resolvedCount;
+
+            if (
+                remaining < 2 ||
+                remaining > DENSE_SOLVER_LIMIT ||
+                this.activeFrames.size < remaining
+            ) {
+                return false;
+            }
+
+            if (this.framesNew - this.lastDenseAttemptFrame < 4) {
+                return false;
+            }
+
+            this.lastDenseAttemptFrame = this.framesNew;
+            return this.tryDenseSolve();
+        }
+
+        tryDenseSolve() {
+            const unresolvedIndices = [];
+
+            for (let index = 0; index < this.k; index++) {
+                if (this.blocks[index] === null) {
+                    unresolvedIndices.push(index);
+                }
+            }
+
+            const unknownCount = unresolvedIndices.length;
+
+            if (
+                unknownCount < 2 ||
+                unknownCount > DENSE_SOLVER_LIMIT ||
+                this.activeFrames.size < unknownCount
+            ) {
+                return false;
+            }
+
+            const columnByBlock = new Map();
+            for (let column = 0; column < unknownCount; column++) {
+                columnByBlock.set(unresolvedIndices[column], column);
+            }
+
+            const pivotRows = new Array(unknownCount).fill(null);
+            let rank = 0;
+
+            for (const frame of this.activeFrames) {
+                if (frame.done || !frame.data || !frame.indices) continue;
+
+                let mask = 0n;
+
+                for (const blockIndex of frame.indices) {
+                    if (this.blocks[blockIndex] !== null) continue;
+                    const column = columnByBlock.get(blockIndex);
+                    if (column !== undefined) {
+                        mask |= 1n << BigInt(column);
+                    }
+                }
+
+                if (mask === 0n) continue;
+
+                const rowData = frame.data.slice();
+
+                while (mask !== 0n) {
+                    const pivot = trailingZeroIndex(mask);
+                    const existing = pivotRows[pivot];
+
+                    if (!existing) {
+                        pivotRows[pivot] = {
+                            mask,
+                            data: rowData
+                        };
+                        rank++;
+                        break;
+                    }
+
+                    mask ^= existing.mask;
+                    xorBytes(rowData, existing.data);
+                }
+
+                if (rank === unknownCount) break;
+            }
+
+            if (rank !== unknownCount) return false;
+
+            const solutions = new Array(unknownCount);
+
+            for (let pivot = unknownCount - 1; pivot >= 0; pivot--) {
+                const row = pivotRows[pivot];
+                if (!row) return false;
+
+                const value = row.data.slice();
+                const pivotBit = 1n << BigInt(pivot);
+                const otherBits = row.mask ^ pivotBit;
+
+                for (let column = pivot + 1; column < unknownCount; column++) {
+                    if ((otherBits & (1n << BigInt(column))) !== 0n) {
+                        xorBytes(value, solutions[column]);
+                    }
+                }
+
+                solutions[pivot] = value;
+            }
+
+            for (let column = 0; column < unknownCount; column++) {
+                const blockIndex = unresolvedIndices[column];
+                if (this.blocks[blockIndex] === null) {
+                    this.blocks[blockIndex] = solutions[column];
+                    this.resolvedCount++;
+                }
+            }
+
+            for (const frame of this.activeFrames) {
+                frame.done = true;
+                frame.data = null;
+                frame.indices = null;
+            }
+
+            this.activeFrames.clear();
+            this.blockToFrames = new Array(this.k);
+            return true;
+        }
+
+        get isComplete() {
+            return this.resolvedCount === this.k;
+        }
+
+        assemble() {
+            if (!this.isComplete) return null;
+
+            const output = new Uint8Array(this.totalLen);
+            let offset = 0;
+
+            for (let index = 0; index < this.k; index++) {
+                const length = Math.min(
+                    this.blockLen,
+                    this.totalLen - offset
+                );
+
+                output.set(this.blocks[index].subarray(0, length), offset);
+                offset += length;
+            }
+
+            return output;
+        }
+    }
+
+    function trailingZeroIndex(mask) {
+        let index = 0;
+        let value = mask;
+
+        while ((value & 1n) === 0n) {
+            value >>= 1n;
+            index++;
+        }
+
+        return index;
+    }
+
+    function parseFrameHeader(bytes) {
+        if (bytes.length < FRAME_HEADER_LEN) return null;
+
+        const view = new DataView(
+            bytes.buffer,
+            bytes.byteOffset,
+            bytes.byteLength
+        );
+
+        return {
+            magic: view.getUint32(0, true),
+            version: view.getUint8(4),
+            flags: view.getUint8(5),
+            sessionId: view.getUint16(6, true),
+            sequence: view.getUint32(8, true),
+            k: view.getUint32(12, true),
+            blockLen: view.getUint16(16, true),
+            encodedDegree: view.getUint16(18, true),
+            totalLen: view.getUint32(20, true),
+            payloadFnv: view.getUint32(24, true),
+            frameCrc: view.getUint32(FRAME_CRC_OFFSET, true)
+        };
+    }
+
+    function validateFrame(bytes, header) {
+        if (!header) return false;
+        if (header.magic !== FRAME_MAGIC) return false;
+        if (header.version !== PROTOCOL_VERSION) return false;
+        if (header.blockLen < 64 || header.blockLen > 2048) return false;
+        if (bytes.length !== FRAME_HEADER_LEN + header.blockLen) return false;
+        if (header.totalLen < 1 || header.totalLen > MAX_TOTAL_LEN) return false;
+        if (header.k < 1 || header.k > MAX_BLOCKS) return false;
+        if (Math.ceil(header.totalLen / header.blockLen) !== header.k) return false;
+        if (
+            header.encodedDegree < 1 ||
+            header.encodedDegree > Math.min(header.k, MAX_FOUNTAIN_DEGREE)
+        ) return false;
+        if (header.frameCrc !== computeFrameCrc(bytes)) return false;
+        return true;
+    }
+
+    function createSessionId() {
+        if (globalThis.crypto && crypto.getRandomValues) {
+            const values = new Uint16Array(1);
+            crypto.getRandomValues(values);
+            return values[0];
+        }
+        return Math.floor(Math.random() * 0x10000);
+    }
+
+    function getSelectedProfile() {
+        return PROFILES[senderProfile.value] || PROFILES.balanced;
+    }
+
+    function getTargetSenderFps() {
+        return Math.max(1, Number(txFpsInput.value) || 20);
+    }
+
+    function updateSenderScale() {
+        const profile = getSelectedProfile();
+        const qrModules = 17 + 4 * profile.qrVersion;
+        const totalModules = qrModules + 8;
+        const availablePixels = Math.floor(Math.min(
+            window.innerWidth * 0.94,
+            window.innerHeight * 0.72,
+            620
+        ));
+
+        senderQrScale = Math.max(
+            3,
+            Math.min(8, Math.floor(availablePixels / totalModules))
+        );
+    }
+
+    async function prepareSelectedFile(file) {
+        if (!file) return;
+
+        if (typeof QRCode === "undefined") {
+            throw new Error("The QR encoder library did not load.");
+        }
+
+        senderStats.textContent = "Reading and preparing the file...";
+        selectedFile = file;
+
+        const fileBytes = new Uint8Array(await file.arrayBuffer());
+        selectedPayload = packFilePayload(file, fileBytes);
+
+        if (selectedPayload.length > MAX_TOTAL_LEN) {
+            throw new Error("This file is larger than the configured 256 MiB limit.");
+        }
+
+        rebuildEncoder();
+    }
+
+    function rebuildEncoder() {
+        if (!selectedFile || !selectedPayload) return;
+
+        stopSenderAnimation();
+
+        const profile = getSelectedProfile();
+        const k = Math.ceil(selectedPayload.length / profile.blockLen);
+
+        if (k > MAX_BLOCKS) {
+            throw new Error("The selected profile creates too many source blocks.");
+        }
+
+        encoder = new FountainEncoder(
+            selectedPayload,
+            profile.blockLen,
+            createSessionId()
+        );
+
+        encodeSequence = 0;
+        senderPaused = false;
+        senderFramesRendered = 0;
+        senderStartedAt = performance.now();
+        pauseSenderButton.disabled = false;
+        pauseSenderButton.textContent = "Pause";
+        updateSenderScale();
+        startSenderAnimation();
+    }
+
+    function startSenderAnimation() {
+        if (!encoder || senderPaused) return;
+
+        stopSenderAnimation();
+        senderNextFrameAt = performance.now();
+        senderAnimationId = requestAnimationFrame(senderLoop);
+    }
+
+    function stopSenderAnimation() {
+        if (senderAnimationId !== null) {
+            cancelAnimationFrame(senderAnimationId);
+            senderAnimationId = null;
+        }
+    }
+
+    function senderLoop(now) {
+        if (!encoder || senderPaused) return;
+
+        const frameInterval = 1000 / getTargetSenderFps();
+
+        if (now >= senderNextFrameAt) {
+            renderSenderFrame();
+            senderNextFrameAt += frameInterval;
+
+            if (now - senderNextFrameAt > frameInterval) {
+                senderNextFrameAt = now + frameInterval;
+            }
+        }
+
+        senderAnimationId = requestAnimationFrame(senderLoop);
+    }
+
+    function renderSenderFrame() {
+        if (!encoder) return;
+
+        const profile = getSelectedProfile();
+        const sequence = encodeSequence >>> 0;
+        const encoded = encoder.encode(sequence);
+
+        QRCode.toCanvas(
+            qrCanvas,
+            [{ data: encoded.bytes, mode: "byte" }],
+            {
+                version: profile.qrVersion,
+                errorCorrectionLevel: "L",
+                margin: 4,
+                scale: senderQrScale,
+                maskPattern: sequence & 7
+            },
+            error => {
+                if (error) {
+                    console.error(error);
+                    senderStats.textContent = `QR generation failed: ${error.message}`;
+                }
+            }
+        );
+
+        encodeSequence = (encodeSequence + 1) >>> 0;
+        senderFramesRendered++;
+
+        if ((senderFramesRendered & 7) === 0 || senderFramesRendered === 1) {
+            const elapsed = Math.max(
+                0.001,
+                (performance.now() - senderStartedAt) / 1000
+            );
+            const actualFps = senderFramesRendered / elapsed;
+            const targetFps = getTargetSenderFps();
+            const rawRate = profile.blockLen * targetFps / 1024;
+            const mode = encoded.systematic
+                ? "source/systematic"
+                : `repair degree ${encoded.degree}`;
+
+            senderStats.textContent = [
+                `${selectedFile.name} (${humanBytes(selectedFile.size)})`,
+                `Payload: ${humanBytes(selectedPayload.length)} | Blocks: ${encoder.k} x ${profile.blockLen} B`,
+                `Sequence: ${sequence} | ${mode}`,
+                `Target: ${targetFps.toFixed(0)} symbols/s | Actual: ${actualFps.toFixed(1)} | Raw ceiling: ${rawRate.toFixed(1)} KiB/s`
+            ].join("\n");
+        }
+    }
+
+    async function startCamera() {
+        if (typeof jsQR === "undefined") {
+            receiverStats.textContent = "The QR decoder library did not load.";
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            receiverStats.textContent = "Camera access is not available in this browser.";
+            return;
+        }
+
+        stopCamera();
+        receiverStats.textContent = "Requesting camera access...";
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    facingMode: { ideal: "environment" },
+                    width: { ideal: 1280, max: 1280 },
+                    height: { ideal: 720, max: 720 },
+                    frameRate: { ideal: 30, max: 30 }
+                }
+            });
+
+            video.srcObject = stream;
+            video.playsInline = true;
+            video.muted = true;
+            await video.play();
+
+            await applyCameraOptimizations(stream.getVideoTracks()[0]);
+
+            setScanSize(480);
+            scanContext = scanCanvas.getContext("2d", {
+                alpha: false,
+                willReadFrequently: true
+            });
+
+            if (!scanContext) {
+                throw new Error("Unable to create the scan canvas context.");
+            }
+
+            resetScanContextOptions();
+            scanning = true;
+            transferFinalizing = false;
+            lastVideoTime = -1;
+            lastPresentedFrameCount = null;
+            scanMetrics = createScanMetrics();
+            lastResolvedForRate = decoder ? decoder.resolvedCount : 0;
+
+            if (metricsIntervalId !== null) {
+                clearInterval(metricsIntervalId);
+            }
+
+            metricsIntervalId = setInterval(updateReceiverUi, 1000);
+            receiverStats.textContent = "Camera ready. Point it at the animated QR stream.";
+            scheduleNextScan();
+        } catch (error) {
+            console.error(error);
+            receiverStats.textContent = `Unable to start the camera: ${error.message}`;
+        }
+    }
+
+    async function applyCameraOptimizations(track) {
+        if (!track || typeof track.getCapabilities !== "function") return;
+
+        try {
+            const capabilities = track.getCapabilities();
+            const advanced = [];
+
+            if (
+                Array.isArray(capabilities.focusMode) &&
+                capabilities.focusMode.includes("continuous")
+            ) {
+                advanced.push({ focusMode: "continuous" });
+            }
+
+            if (
+                Array.isArray(capabilities.exposureMode) &&
+                capabilities.exposureMode.includes("continuous")
+            ) {
+                advanced.push({ exposureMode: "continuous" });
+            }
+
+            if (advanced.length > 0) {
+                await track.applyConstraints({ advanced });
+            }
+        } catch (error) {
+            console.debug("Optional camera constraints were not applied.", error);
+        }
+    }
+
+    function setScanSize(size) {
+        scanSize = size;
+        scanCanvas.width = size;
+        scanCanvas.height = size;
+        resetScanContextOptions();
+    }
+
+    function resetScanContextOptions() {
+        if (!scanContext) return;
+        scanContext.imageSmoothingEnabled = true;
+        scanContext.imageSmoothingQuality = "low";
+    }
+
+    function scheduleNextScan() {
+        if (!scanning) return;
+
+        if (typeof video.requestVideoFrameCallback === "function") {
+            scanRequestKind = "video";
+            scanRequestId = video.requestVideoFrameCallback(scanVideoFrame);
+        } else {
+            scanRequestKind = "animation";
+            scanRequestId = requestAnimationFrame(scanVideoFrame);
+        }
+    }
+
+    function cancelScheduledScan() {
+        if (scanRequestId === null) return;
+
+        if (
+            scanRequestKind === "video" &&
+            typeof video.cancelVideoFrameCallback === "function"
+        ) {
+            video.cancelVideoFrameCallback(scanRequestId);
+        } else {
+            cancelAnimationFrame(scanRequestId);
+        }
+
+        scanRequestId = null;
+        scanRequestKind = null;
+    }
+
+    function scanVideoFrame(_now, metadata) {
+        scanRequestId = null;
+        scanRequestKind = null;
+
+        if (!scanning || !scanContext) return;
+
+        if (metadata && Number.isFinite(metadata.presentedFrames)) {
+            if (lastPresentedFrameCount === null) {
+                scanMetrics.cameraFrames++;
+            } else {
+                scanMetrics.cameraFrames += Math.max(
+                    1,
+                    metadata.presentedFrames - lastPresentedFrameCount
+                );
+            }
+            lastPresentedFrameCount = metadata.presentedFrames;
+        } else {
+            scanMetrics.cameraFrames++;
+        }
+
+        const mediaTime = metadata && Number.isFinite(metadata.mediaTime)
+            ? metadata.mediaTime
+            : video.currentTime;
+
+        if (
+            typeof video.requestVideoFrameCallback !== "function" &&
+            mediaTime === lastVideoTime
+        ) {
+            scheduleNextScan();
+            return;
+        }
+
+        lastVideoTime = mediaTime;
+
+        try {
+            if (
+                video.readyState >= video.HAVE_CURRENT_DATA &&
+                video.videoWidth > 0 &&
+                video.videoHeight > 0
+            ) {
+                const sourceSide = Math.floor(
+                    Math.min(video.videoWidth, video.videoHeight) *
+                    SOURCE_CROP_FRACTION
+                );
+                const sourceX = Math.floor((video.videoWidth - sourceSide) / 2);
+                const sourceY = Math.floor((video.videoHeight - sourceSide) / 2);
+
+                scanContext.drawImage(
+                    video,
+                    sourceX,
+                    sourceY,
+                    sourceSide,
+                    sourceSide,
+                    0,
+                    0,
+                    scanSize,
+                    scanSize
+                );
+
+                const imageData = scanContext.getImageData(
+                    0,
+                    0,
+                    scanSize,
+                    scanSize
+                );
+
+                const decodeStarted = performance.now();
+                const code = jsQR(
+                    imageData.data,
+                    imageData.width,
+                    imageData.height,
+                    { inversionAttempts: "dontInvert" }
+                );
+
+                scanMetrics.decodeTimeMs += performance.now() - decodeStarted;
+                scanMetrics.scanAttempts++;
+
+                if (code && code.binaryData) {
+                    scanMetrics.qrFrames++;
+                    processScannedData(new Uint8Array(code.binaryData));
+                }
+            }
+        } catch (error) {
+            scanMetrics.errors++;
+            console.debug("Scan attempt failed.", error);
+        }
+
+        scheduleNextScan();
+    }
+
+    function processScannedData(bytes) {
+        if (transferFinalizing || (decoder && decoder.isComplete)) return;
+
+        const header = parseFrameHeader(bytes);
+
+        if (!validateFrame(bytes, header)) {
+            scanMetrics.rejectedFrames++;
+            return;
+        }
+
+        if (!decoder || decoder.sessionId !== header.sessionId) {
+            decoder = new FountainDecoder(
+                header.sessionId,
+                header.k,
+                header.blockLen,
+                header.totalLen,
+                header.payloadFnv
+            );
+            clearRecentSequences();
+            lastResolvedForRate = 0;
+        } else if (
+            decoder.k !== header.k ||
+            decoder.blockLen !== header.blockLen ||
+            decoder.totalLen !== header.totalLen ||
+            decoder.expectedFnv !== header.payloadFnv
+        ) {
+            scanMetrics.rejectedFrames++;
+            return;
+        }
+
+        scanMetrics.validFrames++;
+
+        if (recentSequenceSet.has(header.sequence)) {
+            scanMetrics.duplicateFrames++;
+            return;
+        }
+
+        rememberSequence(header.sequence);
+        scanMetrics.uniqueFrames++;
+
+        const result = decoder.addFrame(header.sequence, bytes);
+
+        if (result.innovative) {
+            scanMetrics.innovativeFrames++;
+        }
+
+        if (decoder.isComplete) {
+            finishReceivedTransfer();
+        }
+    }
+
+    function rememberSequence(sequence) {
+        recentSequenceSet.add(sequence);
+        recentSequences.push(sequence);
+
+        if (recentSequences.length > RECENT_SEQUENCE_LIMIT) {
+            const old = recentSequences.shift();
+            recentSequenceSet.delete(old);
+        }
+    }
+
+    function clearRecentSequences() {
+        recentSequences = [];
+        recentSequenceSet = new Set();
+    }
+
+    function createScanMetrics() {
+        return {
+            periodStartedAt: performance.now(),
+            cameraFrames: 0,
+            scanAttempts: 0,
+            qrFrames: 0,
+            validFrames: 0,
+            uniqueFrames: 0,
+            innovativeFrames: 0,
+            duplicateFrames: 0,
+            rejectedFrames: 0,
+            decodeTimeMs: 0,
+            errors: 0
+        };
+    }
+
+    function updateReceiverUi() {
+        const now = performance.now();
+        const elapsed = Math.max(
+            0.001,
+            (now - scanMetrics.periodStartedAt) / 1000
+        );
+
+        const cameraFps = scanMetrics.cameraFrames / elapsed;
+        const scanFps = scanMetrics.scanAttempts / elapsed;
+        const qrFps = scanMetrics.qrFrames / elapsed;
+        const usefulFps = scanMetrics.innovativeFrames / elapsed;
+        const averageDecodeMs = scanMetrics.scanAttempts > 0
+            ? scanMetrics.decodeTimeMs / scanMetrics.scanAttempts
+            : 0;
+
+        const currentResolved = decoder ? decoder.resolvedCount : 0;
+        const resolvedRate = Math.max(
+            0,
+            (currentResolved - lastResolvedForRate) / elapsed
+        );
+        lastResolvedForRate = currentResolved;
+
+        const approximateRate = decoder
+            ? usefulFps * decoder.blockLen / 1024
+            : 0;
+
+        receiverFps.textContent = [
+            `Camera ${cameraFps.toFixed(1)}`,
+            `Scan ${scanFps.toFixed(1)}`,
+            `QR ${qrFps.toFixed(1)}`,
+            `Useful ${usefulFps.toFixed(1)}`,
+            `${averageDecodeMs.toFixed(1)} ms/scan`,
+            `${approximateRate.toFixed(1)} KiB/s`,
+            `${scanSize}px`
+        ].join(" | ");
+
+        receiverFps.classList.remove("good", "medium", "bad");
+        receiverFps.classList.add(
+            usefulFps >= 16
+                ? "good"
+                : usefulFps >= 8
+                    ? "medium"
+                    : "bad"
+        );
+
+        if (decoder) {
+            const progress = decoder.resolvedCount / decoder.k;
+            const remainingBlocks = decoder.k - decoder.resolvedCount;
+            const eta = resolvedRate > 0
+                ? formatDuration(remainingBlocks / resolvedRate)
+                : "estimating";
+
+            receiverProgress.style.width = `${(progress * 100).toFixed(2)}%`;
+            receiverStats.textContent = [
+                `Blocks: ${decoder.resolvedCount}/${decoder.k} (${(progress * 100).toFixed(1)}%)`,
+                `Independent equations: ${decoder.framesNew}`,
+                `Redundant equations: ${decoder.framesDup}`,
+                `Estimated remaining time: ${eta}`,
+                `Rejected this second: ${scanMetrics.rejectedFrames} | Camera duplicates: ${scanMetrics.duplicateFrames}`
+            ].join("\n");
+        }
+
+        adaptScanResolution(averageDecodeMs);
+        scanMetrics = createScanMetrics();
+    }
+
+    function adaptScanResolution(averageDecodeMs) {
+        if (!Number.isFinite(averageDecodeMs) || averageDecodeMs <= 0) return;
+
+        if (averageDecodeMs > 150 && scanSize > 360) {
+            setScanSize(360);
+        } else if (averageDecodeMs > 90 && scanSize > 400) {
+            setScanSize(400);
+        }
+    }
+
+    function finishReceivedTransfer() {
+        if (!decoder || !decoder.isComplete || transferFinalizing) return;
+
+        transferFinalizing = true;
+        scanning = false;
+        cancelScheduledScan();
+
+        if (metricsIntervalId !== null) {
+            clearInterval(metricsIntervalId);
+            metricsIntervalId = null;
+        }
+
+        stopCameraTracksOnly();
+        receiverProgress.style.width = "100%";
+        receiverStats.textContent = "All source blocks recovered. Verifying the file...";
+
+        setTimeout(() => {
+            try {
+                const payload = decoder.assemble();
+
+                if (!payload || fnv1a(payload) !== decoder.expectedFnv) {
+                    receiverStats.textContent = "Transfer completed, but the final checksum failed.";
+                    transferFinalizing = false;
+                    return;
+                }
+
+                const unpacked = unpackFilePayload(payload) || {
+                    name: `AirQR_${Date.now()}.bin`,
+                    mime: "application/octet-stream",
+                    bytes: payload
+                };
+
+                exposeReceivedFile(unpacked);
+                receiverStats.textContent = [
+                    "Transfer complete and checksum verified.",
+                    `${unpacked.name} (${humanBytes(unpacked.bytes.length)})`
+                ].join("\n");
+                releaseWakeLock();
+            } catch (error) {
+                console.error(error);
+                receiverStats.textContent = `Unable to finalize the file: ${error.message}`;
+                transferFinalizing = false;
+            }
+        }, 0);
+    }
+
+    function exposeReceivedFile(file) {
+        if (downloadObjectUrl) {
+            URL.revokeObjectURL(downloadObjectUrl);
+        }
+
+        const blob = new Blob([file.bytes], { type: file.mime });
+        downloadObjectUrl = URL.createObjectURL(blob);
+
+        downloadLink.href = downloadObjectUrl;
+        downloadLink.download = file.name;
+        openLink.href = downloadObjectUrl;
+        receivedFileName.textContent = file.name;
+        receiveActions.classList.remove("hidden");
+
+        // Some browsers permit this automatic download, while others require
+        // the visible Save File button above.
+        try {
+            downloadLink.click();
+        } catch (error) {
+            console.debug("Automatic download was blocked.", error);
+        }
+    }
+
+    function stopCameraTracksOnly() {
+        if (stream) {
+            for (const track of stream.getTracks()) {
+                track.stop();
+            }
+            stream = null;
+        }
+
+        video.srcObject = null;
+    }
+
+    function stopCamera() {
+        scanning = false;
+        cancelScheduledScan();
+        stopCameraTracksOnly();
+    }
+
+    function toggleSenderPause() {
+        if (!encoder) return;
+
+        senderPaused = !senderPaused;
+        pauseSenderButton.textContent = senderPaused ? "Resume" : "Pause";
+
+        if (senderPaused) {
+            stopSenderAnimation();
+        } else {
+            senderStartedAt = performance.now();
+            senderFramesRendered = 0;
+            startSenderAnimation();
+        }
+    }
+
+    async function showSender() {
+        menuView.classList.add("hidden");
+        receiverView.classList.add("hidden");
+        senderView.classList.remove("hidden");
+        document.body.classList.add("transfer-active");
+        await requestWakeLock();
+        updateSenderScale();
+    }
+
+    async function showReceiver() {
+        menuView.classList.add("hidden");
+        senderView.classList.add("hidden");
+        receiverView.classList.remove("hidden");
+        document.body.classList.add("transfer-active");
+        await requestWakeLock();
+        startCamera();
+    }
+
+    function resetApp() {
+        stopSenderAnimation();
+        stopCamera();
+
+        if (metricsIntervalId !== null) {
+            clearInterval(metricsIntervalId);
+            metricsIntervalId = null;
+        }
+
+        encoder = null;
+        decoder = null;
+        selectedFile = null;
+        selectedPayload = null;
+        encodeSequence = 0;
+        senderPaused = false;
+        senderFramesRendered = 0;
+        transferFinalizing = false;
+        scanContext = null;
+        scanSize = 480;
+        lastPresentedFrameCount = null;
+        clearRecentSequences();
+
+        fileInput.value = "";
+        pauseSenderButton.disabled = true;
+        pauseSenderButton.textContent = "Pause";
+        senderStats.textContent = "Select a file to begin.";
+        receiverFps.textContent = "Camera: 0 | Scan: 0 | QR: 0 | Useful: 0";
+        receiverFps.classList.remove("good", "medium");
+        receiverFps.classList.add("bad");
+        receiverStats.textContent = "Waiting for camera...";
+        receiverProgress.style.width = "0%";
+        receiveActions.classList.add("hidden");
+
+        const qrContext = qrCanvas.getContext("2d");
+        qrContext.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+        qrCanvas.width = 1;
+        qrCanvas.height = 1;
+
+        if (downloadObjectUrl) {
+            URL.revokeObjectURL(downloadObjectUrl);
+            downloadObjectUrl = null;
+        }
+
+        senderView.classList.add("hidden");
+        receiverView.classList.add("hidden");
+        menuView.classList.remove("hidden");
+        document.body.classList.remove("transfer-active");
+        releaseWakeLock();
+    }
+
+    async function requestWakeLock() {
+        if (!navigator.wakeLock || document.hidden) return;
+
+        try {
+            wakeLock = await navigator.wakeLock.request("screen");
+            wakeLock.addEventListener("release", () => {
+                wakeLock = null;
+            });
+        } catch (error) {
+            console.debug("Screen wake lock is not available.", error);
+        }
+    }
+
+    async function releaseWakeLock() {
+        if (!wakeLock) return;
+
+        try {
+            await wakeLock.release();
+        } catch (error) {
+            console.debug("Wake lock release failed.", error);
+        } finally {
+            wakeLock = null;
+        }
+    }
+
+    function humanBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+        if (bytes < 1024) return `${bytes} B`;
+
+        const units = ["KiB", "MiB", "GiB"];
+        let value = bytes;
+        let unitIndex = -1;
+
+        do {
+            value /= 1024;
+            unitIndex++;
+        } while (value >= 1024 && unitIndex < units.length - 1);
+
+        return `${value.toFixed(value >= 10 ? 1 : 2)} ${units[unitIndex]}`;
+    }
+
+    function formatDuration(seconds) {
+        if (!Number.isFinite(seconds) || seconds < 0) return "estimating";
+        if (seconds < 60) return `${Math.ceil(seconds)} s`;
+
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.ceil(seconds % 60);
+        return `${minutes}m ${remainingSeconds}s`;
+    }
+
+    function sanitizeFilename(name) {
+        return String(name || "AirQR_file.bin")
+            .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_")
+            .slice(0, 180) || "AirQR_file.bin";
+    }
+
+    function updateFpsOutput() {
+        txFpsOutput.textContent = `${getTargetSenderFps()} symbols/s`;
+    }
+
+    document.getElementById("show-sender-button").addEventListener("click", showSender);
+    document.getElementById("show-receiver-button").addEventListener("click", showReceiver);
+
+    for (const button of document.querySelectorAll(".back-button")) {
+        button.addEventListener("click", resetApp);
+    }
+
+    fileInput.addEventListener("change", async event => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        try {
+            await prepareSelectedFile(file);
+        } catch (error) {
+            console.error(error);
+            senderStats.textContent = `Unable to prepare the file: ${error.message}`;
+        }
+    });
+
+    senderProfile.addEventListener("change", () => {
+        const profile = getSelectedProfile();
+        txFpsInput.value = String(profile.defaultFps);
+        updateFpsOutput();
+        updateSenderScale();
+
+        if (selectedPayload) {
+            try {
+                rebuildEncoder();
+            } catch (error) {
+                console.error(error);
+                senderStats.textContent = `Unable to change profile: ${error.message}`;
+            }
+        }
+    });
+
+    txFpsInput.addEventListener("input", updateFpsOutput);
+    pauseSenderButton.addEventListener("click", toggleSenderPause);
+
+    window.addEventListener("resize", updateSenderScale);
+
+    document.addEventListener("visibilitychange", () => {
+        if (
+            !document.hidden &&
+            document.body.classList.contains("transfer-active")
+        ) {
+            requestWakeLock();
+        }
+    });
+
+    window.addEventListener("beforeunload", () => {
+        stopSenderAnimation();
+        stopCamera();
+        if (downloadObjectUrl) URL.revokeObjectURL(downloadObjectUrl);
+    });
+
+    window.addEventListener("load", () => {
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("sw.js").catch(error => {
+                console.debug("Service worker registration failed.", error);
+            });
+        }
+    });
+
+    updateFpsOutput();
+    updateSenderScale();
+})();
+</script>
+</body>
+</html>
