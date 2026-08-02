@@ -459,12 +459,39 @@
                 transition-duration: 0.001ms !important;
             }
         }
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        .profile-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            color: #2d3436;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .profile-table th, .profile-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .profile-table th {
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .profile-table tr:last-child td {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="container" id="menu-view">
-    <h1>AirQR Web Transfer</h1>
+    <img src="./icons/airqr-192.png"/>
+    <h1>AirQR - Airgapped File Transfer</h1>
     <p class="subtitle">
         High-density fountain-coded QR transfer with parallel ZXing-WASM decoding. No file data is uploaded or sent through a server.
     </p>
@@ -474,7 +501,7 @@
     </div>
 
     <details>
-        <summary>How this test build works</summary>
+        <summary>How this works</summary>
         <p>
             The first K symbols are uncoded source blocks. Every later symbol is a deterministic LT fountain repair equation. The receiver captures camera frames independently of decoding and distributes them across several WebAssembly workers, dropping frames whenever the workers are already occupied.
         </p>
@@ -484,7 +511,47 @@
         <summary>Before testing</summary>
         <p>
             Serve this HTML through HTTPS or localhost. Start with V27 at 24 symbols per second. Use V40 only at close range with a large, bright sender display and select Auto or 960 px on the receiver.
+            
         </p>
+
+
+
+    </details>
+
+    <details>
+        <summary>Recommended Device profiles</summary>
+        <div class="table-wrapper">
+            <table class="profile-table">
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>Sender</th>
+                        <th>Receiver</th>
+                        <th>Intended use</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Reliable</strong></td>
+                        <td>V27, 24 FPS</td>
+                        <td>720 px, Auto workers</td>
+                        <td>Broad device compatibility</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Performance</strong></td>
+                        <td>V40, 30 FPS</td>
+                        <td>960 px, 4 workers, 1280/1920 camera</td>
+                        <td>Modern phones at close range</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Compatibility</strong></td>
+                        <td>V19, 20 FPS</td>
+                        <td>480 px, 2 workers</td>
+                        <td>Low-end or problematic devices</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </details>
 </div>
 
