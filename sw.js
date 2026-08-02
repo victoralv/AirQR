@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "airqr-";
-const CACHE_NAME = "airqr-v3.1.2";
+const CACHE_NAME = "airqr-v3.1.3";
 
 const APP_SHELL = [
     "./",
